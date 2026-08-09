@@ -1,14 +1,21 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from anthropic import Anthropic
 from dotenv import load_dotenv
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 import os
 
 load_dotenv()
 
 app = FastAPI()
+
+limiter = Limiter(key_func=get_remote_address)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
@@ -30,16 +37,17 @@ def generate_streaming_response(message: list[dict]):
     with client.messages.stream(
         model="claude-haiku-4-5",
         messages=message,
-        max_tokens=1000,
+        max_tokens=500,
     ) as stream:
         for text in stream.text_stream:
             yield text
 
 @app.post("/chat")
-async def chat(request: ChatRequest):
+@limiter.limit("5/minute")  
+async def chat(request: Request, body: ChatRequest):
     try:
         return StreamingResponse(
-            generate_streaming_response(request.messages),
+            generate_streaming_response(body.messages),
             media_type="text/plain"
         )
 
