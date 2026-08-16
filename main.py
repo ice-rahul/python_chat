@@ -53,3 +53,30 @@ async def chat(request: Request, body: ChatRequest):
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.post("/evaluate")
+async def evaluate(request: Request, body: ChatRequest):
+    try:
+        response = client.messages.create(
+            model="claude-haiku-4-5",
+            messages=body.messages,
+            max_tokens=500,
+        )
+        return {"response": response["completion"]}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+      
+@app.post("/generate-testcases")
+async def generate_testcases(request: Request, body: ChatRequest):
+	try:
+		response = client.messages.create(
+			model="claude-haiku-4-5",
+			messages=body.messages,
+			max_tokens=500,
+		)
+		return {"testcases": response["completion"]}
+
+	except Exception as e:
+		raise HTTPException(status_code=500, detail=str(e))
+      
