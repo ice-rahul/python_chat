@@ -1,5 +1,6 @@
 from anthropic import Anthropic
 from dotenv import load_dotenv
+from statistics import mean
 import os
 
 load_dotenv()
