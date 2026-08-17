@@ -56,7 +56,7 @@ def generate_streaming_response(message: list[dict]):
 
 @app.post("/chat")
 @limiter.limit("5/minute")  
-async def chat(request: Request, body: ChatRequest):
+async def chat_stream(request: Request, body: ChatRequest):
     try:
         return StreamingResponse(
             generate_streaming_response(body.messages),
