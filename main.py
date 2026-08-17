@@ -9,7 +9,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import os
 from promptEvaluator import PromptEvaluator
-from utils import add_user_message
+from utils import chat, add_user_message
 
 load_dotenv()
 
@@ -68,17 +68,19 @@ async def chat(request: Request, body: ChatRequest):
 
 @app.post("/evaluate")
 async def evaluate(request: Request, body: EvaluateRequest):
-    try:
-        def run_prompt(prompt_inputs):
-            prompt = f"""
-            
-            """
+    api_key = request.headers.get('X-API-KEY')
+    if not api_key:
+        raise HTTPException(status_code=401, detail="Missing X-API-KEY header.")
 
+    try:
+        evaluator = PromptEvaluator(max_concurrent_tasks=3, api_key=api_key)
+
+        def run_prompt(prompt_inputs):
+            filled_prompt = evaluator.fill_template(body.prompt, prompt_inputs)
             messages = []
-            add_user_message(messages, prompt)
-            return chat(messages)
-        
-        evaluator = PromptEvaluator(max_concurrent_tasks=1, api_key=request.headers.get('X-API-KEY'))
+            add_user_message(messages, filled_prompt)
+            return chat(messages, api_key=api_key)
+    
         result = evaluator.run_evaluation(
             run_prompt_function=run_prompt,
             dataset_file=body.testCasesJson,
@@ -87,6 +89,9 @@ async def evaluate(request: Request, body: EvaluateRequest):
         
         return {"response": result}
 
+    except ValueError as e:
+        # Bad/malformed input from the client — not a server-side failure.
+        raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
       

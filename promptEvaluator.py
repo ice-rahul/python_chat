@@ -11,6 +11,22 @@ class PromptEvaluator:
         self.max_concurrent_tasks = max_concurrent_tasks
         self.api_key = api_key
 
+    @staticmethod
+    def fill_template(prompt: str, prompt_inputs: dict) -> str:
+        """Replace {{variable}} placeholders in a user-authored prompt template
+        with values from a test case's prompt_inputs.
+        """
+        def replace(match):
+            key = match.group(1).strip()
+            if key not in prompt_inputs:
+                raise KeyError(
+                    f"Prompt references {{{{{key}}}}} but no matching input was found "
+                    f"in the test case (available: {list(prompt_inputs.keys())})"
+                )
+            return str(prompt_inputs[key])
+
+        return re.sub(r"\{\{(.*?)\}\}", replace, prompt)
+
     def render(self, template_string, variables):
         placeholders = re.findall(r"{([^{}]+)}", template_string)
 
@@ -365,7 +381,24 @@ class PromptEvaluator:
         extra_criteria=None,
     ):
         """Run evaluation on all test cases in the dataset"""
-        dataset = json.loads(dataset_file)
+        try:
+            dataset = json.loads(dataset_file)
+        except (json.JSONDecodeError, TypeError) as e:
+            raise ValueError(f"testCasesJson is not valid JSON: {e}")
+
+        if not isinstance(dataset, list):
+            raise ValueError(
+                f"testCasesJson must be a JSON array of test cases, got {type(dataset).__name__}"
+            )
+        if not dataset:
+            raise ValueError("testCasesJson is an empty array — nothing to evaluate")
+
+        for index, tc in enumerate(dataset):
+            if not isinstance(tc, dict) or "prompt_inputs" not in tc or "solution_criteria" not in tc:
+                raise ValueError(
+                    f"Test case at index {index} is missing required fields "
+                    f"('prompt_inputs', 'solution_criteria'): {tc}"
+                )
 
         results = []
         completed = 0
