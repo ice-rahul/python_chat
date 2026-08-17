@@ -204,7 +204,6 @@ class PromptEvaluator:
         task_description,
         prompt_inputs_spec={},
         num_cases=1,
-        output_file="dataset.json",
     ):
         """Generate test dataset based on task description and save to file"""
         ideas = self.generate_unique_ideas(
@@ -243,9 +242,6 @@ class PromptEvaluator:
                     dataset.append(result)
                 except Exception as e:
                     print(f"Error generating test case: {e}")
-
-        with open(output_file, "w") as f:
-            json.dump(dataset, f, indent=2)
 
         return dataset
 

@@ -85,7 +85,6 @@ async def generate_testcases(request: Request, body: TestCaseRequest):
         dataset = evaluator.generate_dataset(
             task_description=body.prompt,
             prompt_inputs_spec=body.variables,
-            output_file="dataset.json",
             num_cases=body.numTestCases,
         )
 
