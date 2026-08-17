@@ -365,7 +365,7 @@ class PromptEvaluator:
         extra_criteria=None,
     ):
         """Run evaluation on all test cases in the dataset"""
-        dataset = json.load(dataset_file)
+        dataset = json.loads(dataset_file)
 
         results = []
         completed = 0
