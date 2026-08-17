@@ -9,6 +9,7 @@ from slowapi.util import get_remote_address
 from slowapi.errors import RateLimitExceeded
 import os
 from promptEvaluator import PromptEvaluator
+from utils import add_user_message
 
 load_dotenv()
 
@@ -68,12 +69,23 @@ async def chat(request: Request, body: ChatRequest):
 @app.post("/evaluate")
 async def evaluate(request: Request, body: EvaluateRequest):
     try:
-        response = client.messages.create(
-            model="claude-haiku-4-5",
-            messages=body.messages,
-            max_tokens=500,
+        def run_prompt(prompt_inputs):
+            prompt = f"""
+            
+            """
+
+            messages = []
+            add_user_message(messages, prompt)
+            return chat(messages)
+        
+        evaluator = PromptEvaluator(max_concurrent_tasks=1, api_key=request.headers.get('X-API-KEY'))
+        result = evaluator.run_evaluation(
+            run_prompt_function=run_prompt,
+            dataset_file=body.testCasesJson,
+            extra_criteria=body.additionalCriteria
         )
-        return {"response": response["completion"]}
+        
+        return {"response": result}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

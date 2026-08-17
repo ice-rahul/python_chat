@@ -363,12 +363,9 @@ class PromptEvaluator:
         run_prompt_function,
         dataset_file,
         extra_criteria=None,
-        json_output_file="output.json",
-        html_output_file="output.html",
     ):
         """Run evaluation on all test cases in the dataset"""
-        with open(dataset_file, "r") as f:
-            dataset = json.load(f)
+        dataset = json.load(dataset_file)
 
         results = []
         completed = 0
@@ -402,11 +399,6 @@ class PromptEvaluator:
         average_score = mean([result["score"] for result in results])
         print(f"Average score: {average_score}")
 
-        with open(json_output_file, "w") as f:
-            json.dump(results, f, indent=2)
-
         html = generate_prompt_evaluation_report(results)
-        with open(html_output_file, "w", encoding="utf-8") as f:
-            f.write(html)
 
-        return results
+        return html
